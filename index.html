@@ -1,0 +1,2169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bot-Friendly OSS — AI Bot Readiness Lab</title>
+  <meta name="description" content="A single-page, interactive lab for making your open-source repo discoverable and usable for AI coding bots: score, simulate, generate repo artifacts, and export a starter pack." />
+  <style>
+    :root{
+      --bg:#0a0e17;
+      --card:rgba(255,255,255,.06);
+      --card2:rgba(255,255,255,.045);
+      --stroke:rgba(255,255,255,.10);
+      --stroke2:rgba(255,255,255,.16);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.68);
+      --muted2:rgba(255,255,255,.55);
+      --good:#5EF0C1;
+      --warn:#FFCC66;
+      --bad:#FF5EA8;
+      --accent:#7C5CFF;
+      --accent2:#22D3EE;
+      --accent3:#FF5EA8;
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+      --radius: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background:
+        radial-gradient(1000px 600px at 20% 10%, rgba(124,92,255,.24), transparent 60%),
+        radial-gradient(900px 500px at 80% 0%, rgba(34,211,238,.18), transparent 55%),
+        radial-gradient(700px 500px at 80% 70%, rgba(255,94,168,.14), transparent 60%),
+        radial-gradient(900px 650px at 10% 90%, rgba(94,240,193,.10), transparent 55%),
+        linear-gradient(180deg, #070a12, var(--bg));
+      color:var(--text);
+      overflow-x:hidden;
+    }
+
+    a{color:inherit}
+    .wrap{max-width:1200px; margin:0 auto; padding:28px 18px 70px}
+
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:16px;
+      position:sticky; top:0;
+      padding:14px 0;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      background:linear-gradient(180deg, rgba(10,14,23,.88), rgba(10,14,23,.55));
+      border-bottom:1px solid rgba(255,255,255,.06);
+      z-index: 20;
+    }
+
+    .brand{display:flex; align-items:center; gap:12px}
+    .logo{
+      width:38px; height:38px; border-radius:12px;
+      background: linear-gradient(135deg, rgba(124,92,255,.9), rgba(34,211,238,.85));
+      box-shadow: 0 10px 30px rgba(124,92,255,.25);
+      border:1px solid rgba(255,255,255,.18);
+      position:relative;
+      overflow:hidden;
+    }
+    .logo:before{
+      content:"";
+      position:absolute; inset:-25%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.35), transparent 55%);
+      transform: rotate(15deg);
+    }
+    .brand h1{font-size:14px; margin:0; letter-spacing:.2px; font-weight:700}
+    .brand p{margin:2px 0 0; font-size:12px; color:var(--muted); max-width:560px}
+
+    .actions{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+
+    .pill{
+      display:flex; align-items:center; gap:10px;
+      padding:10px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: 0 10px 24px rgba(0,0,0,.20);
+    }
+    .pill label{font-size:12px; color:var(--muted)}
+    .pill input[type="text"]{
+      width:220px;
+      background:transparent;
+      border:none;
+      outline:none;
+      color:var(--text);
+      font-size:12.5px;
+      font-family:var(--mono);
+    }
+
+    .btn{
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      color:var(--text);
+      border-radius: 12px;
+      padding:10px 12px;
+      cursor:pointer;
+      transition: transform .12s ease, background .15s ease, border-color .15s ease;
+      box-shadow: 0 14px 32px rgba(0,0,0,.30);
+      user-select:none;
+      font-weight:650;
+      font-size:12.5px;
+    }
+    .btn:hover{transform: translateY(-1px); border-color: rgba(255,255,255,.22)}
+    .btn:active{transform: translateY(0px) scale(.98)}
+
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(124,92,255,.92), rgba(34,211,238,.85));
+      border-color: rgba(255,255,255,.24);
+    }
+    .btn.danger{
+      background: linear-gradient(135deg, rgba(255,94,168,.75), rgba(255,204,102,.20));
+      border-color: rgba(255,255,255,.18);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap:16px;
+      margin-top:16px;
+    }
+
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
+      .pill input[type="text"]{width: 180px}
+      .brand p{display:none}
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.035));
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+
+    .card:before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      background:
+        radial-gradient(600px 220px at 20% 0%, rgba(124,92,255,.22), transparent 55%),
+        radial-gradient(500px 200px at 80% 10%, rgba(34,211,238,.18), transparent 55%),
+        radial-gradient(500px 240px at 50% 100%, rgba(255,94,168,.10), transparent 65%);
+      opacity:.7;
+      pointer-events:none;
+    }
+
+    .card .inner{position:relative; padding:16px}
+
+    .hero{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+      padding:16px;
+    }
+
+    .hero-left h2{margin:0; font-size:18px; letter-spacing:.2px}
+    .hero-left p{margin:8px 0 0; color:var(--muted); font-size:13px; line-height:1.4}
+
+    .metricRow{display:flex; gap:12px; flex-wrap:wrap; margin-top:12px}
+    .metric{
+      background: rgba(0,0,0,.25);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      padding:10px 12px;
+      min-width: 140px;
+    }
+    .metric .k{font-size:11px; color:var(--muted2)}
+    .metric .v{font-size:16px; font-weight:800; margin-top:4px}
+
+    .scoreRing{
+      width:110px; height:110px; border-radius: 999px;
+      background:
+        conic-gradient(from 210deg, rgba(124,92,255,.95), rgba(34,211,238,.95), rgba(94,240,193,.85), rgba(255,94,168,.90));
+      padding:1px;
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow: 0 18px 44px rgba(0,0,0,.45);
+      flex: 0 0 auto;
+    }
+    .scoreRing .ringInner{
+      width:100%; height:100%; border-radius:999px;
+      background: rgba(10,14,23,.80);
+      display:flex; align-items:center; justify-content:center;
+      flex-direction:column;
+      gap:2px;
+      backdrop-filter: blur(10px);
+    }
+    .scoreRing .big{font-size:26px; font-weight:900}
+    .scoreRing .small{font-size:11px; color:var(--muted)}
+
+    .tabs{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px}
+    .tab{
+      padding:9px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.10);
+      cursor:pointer;
+      font-size:12.5px;
+      color:var(--muted);
+      user-select:none;
+    }
+    .tab.active{color:var(--text); border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.075)}
+
+    .panel{display:none}
+    .panel.active{display:block}
+
+    .twoCol{display:grid; grid-template-columns: 1fr 1fr; gap:14px}
+    @media (max-width: 820px){.twoCol{grid-template-columns:1fr}}
+
+    .sectionTitle{display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 8px}
+    .sectionTitle h3{margin:0; font-size:13.5px; letter-spacing:.2px}
+    .sectionTitle .hint{font-size:12px; color:var(--muted)}
+
+    .checklist{display:flex; flex-direction:column; gap:10px}
+    .item{
+      display:flex; align-items:flex-start; gap:10px;
+      padding:12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .item input{margin-top:3px}
+    .item .meta{flex:1}
+    .item .meta .t{font-weight:750; font-size:13px}
+    .item .meta .d{margin-top:4px; color:var(--muted); font-size:12px; line-height:1.35}
+
+    .badge{
+      font-size:11px; font-weight:800; letter-spacing:.15px;
+      padding:6px 8px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    .badge.good{color: rgba(94,240,193,.95); border-color: rgba(94,240,193,.25); background: rgba(94,240,193,.08)}
+    .badge.warn{color: rgba(255,204,102,.95); border-color: rgba(255,204,102,.25); background: rgba(255,204,102,.08)}
+    .badge.bad{color: rgba(255,94,168,.95); border-color: rgba(255,94,168,.25); background: rgba(255,94,168,.07)}
+
+    .mini{
+      background: rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      padding:12px;
+    }
+
+    .mini p{margin:0; color:var(--muted); font-size:12.5px; line-height:1.45}
+
+    .rangeRow{display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center; margin-top:10px}
+    .rangeRow input[type="range"]{width:100%}
+
+    .tinyGrid{display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px}
+    @media(max-width:560px){.tinyGrid{grid-template-columns:1fr}}
+
+    .kv{
+      padding:10px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .kv .k{font-size:11px; color:var(--muted2)}
+    .kv .v{margin-top:6px; font-family:var(--mono); font-size:12.2px; line-height:1.35}
+
+    .editor{
+      width:100%;
+      min-height: 310px;
+      resize: vertical;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.30);
+      color: rgba(255,255,255,.90);
+      padding: 12px 12px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      outline:none;
+      line-height: 1.45;
+      box-shadow: 0 14px 40px rgba(0,0,0,.25);
+    }
+
+    .rowBtns{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+
+    .split{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media(max-width:960px){.split{grid-template-columns:1fr}}
+
+    .simGrid{display:grid; grid-template-columns: 1.05fr .95fr; gap:14px}
+    @media(max-width:980px){.simGrid{grid-template-columns:1fr}}
+
+    .timeline{
+      display:flex; flex-direction:column; gap:8px;
+      max-height: 360px;
+      overflow:auto;
+      padding-right:4px;
+    }
+
+    .evt{
+      padding:10px 10px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.24);
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+
+    .dot{
+      width:10px; height:10px; border-radius: 999px;
+      margin-top:4px;
+      flex: 0 0 auto;
+      background: rgba(255,255,255,.25);
+      border:1px solid rgba(255,255,255,.18);
+    }
+    .dot.good{background: rgba(94,240,193,.9)}
+    .dot.warn{background: rgba(255,204,102,.9)}
+    .dot.bad{background: rgba(255,94,168,.9)}
+
+    .evt .text{flex:1}
+    .evt .text .t{font-weight:750; font-size:12.5px}
+    .evt .text .d{margin-top:4px; font-size:12px; color:var(--muted); line-height:1.35}
+    .evt .time{font-family:var(--mono); font-size:11px; color:var(--muted2); white-space:nowrap}
+
+    .progress{
+      height:10px; border-radius: 999px;
+      background: rgba(255,255,255,.07);
+      border:1px solid rgba(255,255,255,.10);
+      overflow:hidden;
+    }
+    .bar{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, rgba(124,92,255,.95), rgba(34,211,238,.90), rgba(94,240,193,.85));
+      transition: width .25s ease;
+    }
+
+    .smallNote{color:var(--muted2); font-size:12px; line-height:1.4}
+
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background: rgba(0,0,0,.50);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius: 14px;
+      padding:10px 12px;
+      color: rgba(255,255,255,.88);
+      box-shadow: 0 18px 60px rgba(0,0,0,.45);
+      max-width: min(680px, calc(100vw - 24px));
+      display:none;
+      z-index: 999;
+    }
+
+    .toast.show{display:block; animation: pop .14s ease}
+    @keyframes pop{from{transform: translateX(-50%) translateY(8px); opacity:.4} to{transform: translateX(-50%) translateY(0px); opacity:1}}
+
+    .kbd{font-family:var(--mono); font-size:11px; color:rgba(255,255,255,.75); background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.10); padding:2px 6px; border-radius: 8px}
+
+    footer{margin-top:14px; color:var(--muted2); font-size:12px; line-height:1.45}
+    footer a{color:rgba(34,211,238,.92)}
+
+    .sr{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Bot-Friendly OSS</h1>
+          <p>AI Bot Readiness Lab: audit your repo, simulate an AI contributor, and export a bot-first starter pack.</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="pill" title="A friendly label for your repository. Used in generated artifacts.">
+          <label for="repoName">Repo</label>
+          <input id="repoName" type="text" value="my-awesome-library" spellcheck="false" />
+        </div>
+        <button class="btn" id="btnLoadDemo">Load demo</button>
+        <button class="btn primary" id="btnExport">Export starter pack</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hero">
+        <div class="hero-left">
+          <h2>Make your project discoverable and usable for AI coding bots</h2>
+          <p>
+            Many “AI bots” behave like fast, impatient new contributors: they skim README, hunt for “how to run”, scan docs,
+            then attempt a tiny change. This lab helps you optimize for that workflow.
+          </p>
+
+          <div class="metricRow">
+            <div class="metric">
+              <div class="k">Bot Readiness Score</div>
+              <div class="v" id="scoreText">0 / 100</div>
+            </div>
+            <div class="metric">
+              <div class="k">Likely bot outcomes</div>
+              <div class="v" id="outcomesText">—</div>
+            </div>
+            <div class="metric">
+              <div class="k">Time-to-first-PR (sim)</div>
+              <div class="v" id="ttfpText">—</div>
+            </div>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Main views">
+            <div class="tab active" data-tab="audit" role="tab" aria-selected="true" tabindex="0">Audit</div>
+            <div class="tab" data-tab="simulate" role="tab" aria-selected="false" tabindex="0">Simulate bot</div>
+            <div class="tab" data-tab="generate" role="tab" aria-selected="false" tabindex="0">Generate files</div>
+            <div class="tab" data-tab="insights" role="tab" aria-selected="false" tabindex="0">Insights</div>
+          </div>
+        </div>
+
+        <div class="scoreRing" aria-label="Score ring">
+          <div class="ringInner">
+            <div class="big" id="scoreBig">0</div>
+            <div class="small">readiness</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="inner">
+          <div class="panel active" id="panel-audit">
+            <div class="twoCol">
+              <div>
+                <div class="sectionTitle">
+                  <h3>Bot-first checklist</h3>
+                  <div class="hint">Toggle items based on your repo reality.</div>
+                </div>
+
+                <div class="checklist" id="checklist"></div>
+              </div>
+
+              <div>
+                <div class="sectionTitle">
+                  <h3>Assumptions & constraints</h3>
+                  <div class="hint">Tweak to match your environment.</div>
+                </div>
+
+                <div class="mini">
+                  <p>
+                    AI bots are great at pattern matching, but bad at missing context. The biggest boost comes from
+                    unambiguous, copy/paste runnable instructions + a short “map” of the codebase.
+                  </p>
+
+                  <div class="rangeRow">
+                    <div>
+                      <div class="smallNote">Repo size (relative complexity)</div>
+                      <input id="rangeSize" type="range" min="1" max="5" value="3" />
+                    </div>
+                    <div class="kbd" id="sizeLabel">medium</div>
+                  </div>
+
+                  <div class="rangeRow">
+                    <div>
+                      <div class="smallNote">CI reliability</div>
+                      <input id="rangeCI" type="range" min="0" max="100" value="70" />
+                    </div>
+                    <div class="kbd" id="ciLabel">70%</div>
+                  </div>
+
+                  <div class="tinyGrid">
+                    <div class="kv">
+                      <div class="k">Primary language</div>
+                      <div class="v">
+                        <select id="lang" style="width:100%; background:rgba(0,0,0,.20); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.9); padding:8px 10px; border-radius:12px; outline:none">
+                          <option>JavaScript/TypeScript</option>
+                          <option>Python</option>
+                          <option>Go</option>
+                          <option>Rust</option>
+                          <option>Java</option>
+                          <option>C#</option>
+                          <option>Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="kv">
+                      <div class="k">Preferred contribution type</div>
+                      <div class="v">
+                        <select id="contrib" style="width:100%; background:rgba(0,0,0,.20); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.9); padding:8px 10px; border-radius:12px; outline:none">
+                          <option>Docs improvements</option>
+                          <option>Bug fixes</option>
+                          <option>Tests</option>
+                          <option>New features</option>
+                          <option>Refactors</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="rowBtns">
+                    <button class="btn" id="btnAutoFix">Auto-suggest fixes</button>
+                    <button class="btn danger" id="btnReset">Reset</button>
+                  </div>
+
+                  <div style="margin-top:10px" class="smallNote">
+                    Tip: Use <span class="kbd">Tab</span> to move between controls. Use <span class="kbd">Enter</span> on a selected tab.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <footer>
+              Trend inspiration: “How to attract AI bots to your open source project” (HN). This app is an offline simulator and checklist, not a live repository scanner.
+            </footer>
+          </div>
+
+          <div class="panel" id="panel-simulate">
+            <div class="simGrid">
+              <div>
+                <div class="sectionTitle">
+                  <h3>Bot run</h3>
+                  <div class="hint">Simulates a coding agent attempting a first PR based on your settings.</div>
+                </div>
+
+                <div class="mini">
+                  <div class="smallNote">Scenario</div>
+                  <div class="tinyGrid" style="margin-top:8px">
+                    <div class="kv">
+                      <div class="k">Bot goal</div>
+                      <div class="v">
+                        <select id="goal" style="width:100%; background:rgba(0,0,0,.20); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.9); padding:8px 10px; border-radius:12px; outline:none">
+                          <option>Fix a small bug</option>
+                          <option>Improve README clarity</option>
+                          <option>Add a missing unit test</option>
+                          <option>Update dependencies</option>
+                          <option>Implement a tiny feature flag</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="kv">
+                      <div class="k">Bot patience</div>
+                      <div class="v">
+                        <select id="patience" style="width:100%; background:rgba(0,0,0,.20); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.9); padding:8px 10px; border-radius:12px; outline:none">
+                          <option value="low">Low (drops quickly)</option>
+                          <option value="med" selected>Medium</option>
+                          <option value="high">High</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="rangeRow">
+                    <div>
+                      <div class="smallNote">Bot “context window” budget</div>
+                      <input id="rangeCtx" type="range" min="4" max="128" value="48" />
+                    </div>
+                    <div class="kbd" id="ctxLabel">48 KB</div>
+                  </div>
+
+                  <div class="rangeRow">
+                    <div>
+                      <div class="smallNote">Network / tool flakiness</div>
+                      <input id="rangeFlaky" type="range" min="0" max="100" value="18" />
+                    </div>
+                    <div class="kbd" id="flakyLabel">18%</div>
+                  </div>
+
+                  <div class="rowBtns">
+                    <button class="btn primary" id="btnRun">Run simulation</button>
+                    <button class="btn" id="btnStep">Step</button>
+                    <button class="btn" id="btnFast">Fast-forward</button>
+                  </div>
+
+                  <div style="margin-top:10px">
+                    <div class="smallNote">Progress</div>
+                    <div class="progress" aria-label="Simulation progress"><div class="bar" id="bar"></div></div>
+                  </div>
+
+                  <div style="margin-top:10px" class="smallNote">
+                    Simulation uses your audit checklist to decide what the bot can learn and how quickly it will succeed.
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div class="sectionTitle">
+                  <h3>Timeline</h3>
+                  <div class="hint">Watch where the bot gets stuck.</div>
+                </div>
+                <div class="timeline" id="timeline"></div>
+                <div style="margin-top:10px" class="smallNote" id="simSummary">Run a simulation to see an outcome summary.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" id="panel-generate">
+            <div class="split">
+              <div>
+                <div class="sectionTitle">
+                  <h3>Generated artifacts</h3>
+                  <div class="hint">Click any preset, then customize.</div>
+                </div>
+
+                <div class="rowBtns" style="margin-top:0">
+                  <button class="btn" data-gen="readme">README bot section</button>
+                  <button class="btn" data-gen="contrib">CONTRIBUTING.md</button>
+                  <button class="btn" data-gen="issue">Issue templates</button>
+                  <button class="btn" data-gen="pr">PR template</button>
+                  <button class="btn" data-gen="map">CODEBASE_MAP.md</button>
+                  <button class="btn" data-gen="actions">GitHub Actions hints</button>
+                </div>
+
+                <textarea id="editor" class="editor" spellcheck="false"></textarea>
+
+                <div class="rowBtns">
+                  <button class="btn primary" id="btnCopy">Copy</button>
+                  <button class="btn" id="btnAnalyze">Analyze text</button>
+                  <button class="btn" id="btnInsert">Insert into export pack</button>
+                </div>
+
+                <div class="smallNote" id="analyzeOut" style="margin-top:10px"></div>
+              </div>
+
+              <div>
+                <div class="sectionTitle">
+                  <h3>Export pack</h3>
+                  <div class="hint">What will be included in your ZIP.</div>
+                </div>
+
+                <div class="mini">
+                  <div class="smallNote">Files to export</div>
+                  <div id="packList" style="margin-top:10px; display:flex; flex-direction:column; gap:8px"></div>
+                  <div class="rowBtns" style="margin-top:12px">
+                    <button class="btn" id="btnClearPack">Clear pack</button>
+                    <button class="btn primary" id="btnExport2">Download ZIP</button>
+                  </div>
+
+                  <div style="margin-top:12px" class="smallNote">
+                    This is client-side only. Your ZIP is generated locally in the browser.
+                  </div>
+                </div>
+
+                <div class="mini" style="margin-top:12px">
+                  <div class="sectionTitle" style="margin:0 0 8px">
+                    <h3>Bot landing page preview</h3>
+                    <div class="hint">A one-screen “route map”.</div>
+                  </div>
+                  <div id="landingPreview" style="font-family:var(--mono); font-size:12px; line-height:1.35; white-space:pre-wrap; color:rgba(255,255,255,.85)"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" id="panel-insights">
+            <div class="twoCol">
+              <div>
+                <div class="sectionTitle">
+                  <h3>What bots “want” (in practice)</h3>
+                  <div class="hint">A compact mental model.</div>
+                </div>
+
+                <div class="mini">
+                  <p><b>1) A fast boot path.</b> If setup takes longer than a couple minutes, the bot will guess. Guessing breaks builds.</p>
+                  <p style="margin-top:10px"><b>2) A trustworthy test command.</b> Bots prefer deterministic verification. They will stop if tests are flaky.</p>
+                  <p style="margin-top:10px"><b>3) A small safe task.</b> Give “good first issue” that includes reproduction steps, expected output, and file pointers.</p>
+                  <p style="margin-top:10px"><b>4) A map.</b> A short CODEBASE_MAP reduces wasted tokens on directory exploration.</p>
+                  <p style="margin-top:10px"><b>5) Clear boundaries.</b> Explicitly say what NOT to do (no dependency bumps, no formatting, etc.).</p>
+                </div>
+
+                <div class="mini" style="margin-top:12px">
+                  <div class="sectionTitle" style="margin:0 0 8px">
+                    <h3>Suggested next actions</h3>
+                    <div class="hint">Based on your current toggles.</div>
+                  </div>
+                  <div id="nextActions" style="display:flex; flex-direction:column; gap:8px"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="sectionTitle">
+                  <h3>Readiness breakdown</h3>
+                  <div class="hint">Where your score comes from.</div>
+                </div>
+
+                <div class="mini">
+                  <div id="breakdown"></div>
+                  <div style="margin-top:10px" class="smallNote">
+                    This is a heuristic. The goal is actionable clarity, not a perfect measurement.
+                  </div>
+                </div>
+
+                <div class="mini" style="margin-top:12px">
+                  <div class="sectionTitle" style="margin:0 0 8px">
+                    <h3>Export/import state</h3>
+                    <div class="hint">Share a configuration with teammates.</div>
+                  </div>
+
+                  <div class="rowBtns" style="margin-top:0">
+                    <button class="btn" id="btnCopyState">Copy state JSON</button>
+                    <button class="btn" id="btnPasteState">Paste state JSON</button>
+                    <button class="btn" id="btnShareLink">Share link</button>
+                  </div>
+
+                  <div class="smallNote" id="shareOut" style="margin-top:10px"></div>
+                </div>
+              </div>
+            </div>
+
+            <footer>
+              Pro tip: Optimize for “first 5 minutes”. If a bot can run tests and make a small docs PR quickly, you will likely get repeat contributions.
+            </footer>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="inner">
+          <div class="sectionTitle">
+            <h3>Bot persona</h3>
+            <div class="hint">Tune the simulated agent.</div>
+          </div>
+
+          <div class="mini">
+            <div class="smallNote">Name</div>
+            <input id="botName" type="text" value="PatchBot" spellcheck="false" style="width:100%; margin-top:8px; background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.92); border-radius:12px; padding:10px 10px; outline:none; font-family:var(--mono); font-size:12.5px" />
+
+            <div style="margin-top:12px" class="smallNote">Style</div>
+            <div class="tinyGrid" style="margin-top:8px">
+              <button class="btn" id="stylePrecise" title="Cautious, asks for missing info">Precise</button>
+              <button class="btn" id="styleFast" title="Moves quickly, more guesses">Fast</button>
+            </div>
+
+            <div style="margin-top:12px" class="smallNote">Behavior toggles</div>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px">
+              <label style="display:flex; align-items:flex-start; gap:10px; font-size:12.5px; color:var(--muted)">
+                <input id="togAsks" type="checkbox" checked />
+                <span><b style="color:var(--text)">Asks questions</b> when blocked (creates an issue/comment).</span>
+              </label>
+              <label style="display:flex; align-items:flex-start; gap:10px; font-size:12.5px; color:var(--muted)">
+                <input id="togTests" type="checkbox" checked />
+                <span><b style="color:var(--text)">Runs tests</b> before proposing changes.</span>
+              </label>
+              <label style="display:flex; align-items:flex-start; gap:10px; font-size:12.5px; color:var(--muted)">
+                <input id="togDocs" type="checkbox" checked />
+                <span><b style="color:var(--text)">Starts with docs</b> to build context.</span>
+              </label>
+            </div>
+
+            <div style="margin-top:12px" class="smallNote">Quick outcomes</div>
+            <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px" id="chips"></div>
+          </div>
+
+          <div class="mini" style="margin-top:12px">
+            <div class="sectionTitle" style="margin:0 0 8px">
+              <h3>Bot-first “good issue” generator</h3>
+              <div class="hint">Produces a tightly-scoped ticket.</div>
+            </div>
+
+            <div class="smallNote">Select a type, then generate</div>
+            <div class="rowBtns" style="margin-top:10px">
+              <button class="btn" data-issue="bug">Bug</button>
+              <button class="btn" data-issue="docs">Docs</button>
+              <button class="btn" data-issue="test">Test</button>
+              <button class="btn" data-issue="feat">Feature</button>
+            </div>
+
+            <textarea id="issueOut" class="editor" style="min-height:230px" spellcheck="false"></textarea>
+            <div class="rowBtns">
+              <button class="btn primary" id="btnCopyIssue">Copy issue</button>
+              <button class="btn" id="btnPutInPack">Insert into export pack</button>
+            </div>
+          </div>
+
+          <footer>
+            Built for humans too: If a bot can contribute, a new maintainer can onboard faster.
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <script>
+    // Bot-Friendly OSS — AI Bot Readiness Lab
+    // Single-file app: no server, no repo scanning. All simulation is heuristic + interactive.
+
+    // ---------- Utilities ----------
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+    function lerp(a,b,t){ return a + (b-a)*t; }
+    function round(n, p=0){ const m = Math.pow(10,p); return Math.round(n*m)/m; }
+    function nowMs(){ return performance.now(); }
+
+    function uid(){
+      return Math.random().toString(16).slice(2) + "-" + Math.random().toString(16).slice(2);
+    }
+
+    function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+    function fmtTime(mins){
+      if(mins < 1) return `${Math.round(mins*60)}s`;
+      if(mins < 60) return `${Math.round(mins)}m`;
+      const h = Math.floor(mins/60);
+      const m = Math.round(mins%60);
+      return `${h}h ${m}m`;
+    }
+
+    function toast(msg){
+      const el = $('#toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    function safeJsonParse(s){
+      try{ return JSON.parse(s); }catch(e){ return null; }
+    }
+
+    // ---------- App state ----------
+    const DEFAULT = {
+      repoName: 'my-awesome-library',
+      lang: 'JavaScript/TypeScript',
+      contrib: 'Docs improvements',
+      size: 3,
+      ci: 70,
+      goal: 'Fix a small bug',
+      patience: 'med',
+      ctxKB: 48,
+      flaky: 18,
+      botName: 'PatchBot',
+      persona: 'precise',
+      asks: true,
+      runsTests: true,
+      startsDocs: true,
+      checklist: {},
+      pack: {}
+    };
+
+    const ITEMS = [
+      {
+        id:'readme_clear',
+        title:'README has a crisp “How to run” section',
+        desc:'Include exact commands (copy/paste), expected output, and common pitfalls. Bots do not infer missing steps reliably.',
+        weight:10,
+        tags:['discoverability','setup']
+      },
+      {
+        id:'quickstart',
+        title:'One-command quickstart (or devcontainer)',
+        desc:'Provide make targets, scripts, devcontainer, or a single “bootstrap” command that builds and runs tests.',
+        weight:9,
+        tags:['setup','automation']
+      },
+      {
+        id:'tests_command',
+        title:'A single authoritative test command',
+        desc:'Document exactly how to run tests locally (and what “passing” means).',
+        weight:9,
+        tags:['verification','ci']
+      },
+      {
+        id:'good_first_issues',
+        title:'Bot-friendly “good first issue” labels exist',
+        desc:'Issues include reproduction steps, expected behavior, and file pointers. Bots thrive on concrete tickets.',
+        weight:8,
+        tags:['tasks','triage']
+      },
+      {
+        id:'contributing',
+        title:'CONTRIBUTING.md with guardrails',
+        desc:'Spell out constraints: style, scope boundaries, how to run lint/tests, and how to submit PRs.',
+        weight:7,
+        tags:['process']
+      },
+      {
+        id:'codebase_map',
+        title:'Codebase map exists (CODEBASE_MAP.md)',
+        desc:'A short file explaining directory purpose, key modules, and where to start reading.',
+        weight:8,
+        tags:['orientation']
+      },
+      {
+        id:'small_tasks',
+        title:'There are tiny tasks with measurable completion',
+        desc:'Examples: add missing test, fix typo, clarify docs, improve error message.',
+        weight:6,
+        tags:['tasks']
+      },
+      {
+        id:'stable_ci',
+        title:'CI is stable and matches local',
+        desc:'Bots panic when CI flakes. Make CI deterministic and align it with local scripts.',
+        weight:7,
+        tags:['ci']
+      },
+      {
+        id:'issue_templates',
+        title:'Issue templates ask for reproduction steps',
+        desc:'Templates prompt for logs, versions, expected vs actual, and steps to reproduce.',
+        weight:5,
+        tags:['process','triage']
+      },
+      {
+        id:'pr_template',
+        title:'PR template asks for test evidence',
+        desc:'Encourage bots to include how they verified changes; reduces maintainer effort.',
+        weight:4,
+        tags:['process']
+      },
+      {
+        id:'observability',
+        title:'Logs/errors are actionable',
+        desc:'Good error messages act like a “teacher” for bots. Provide clear logs and troubleshooting hints.',
+        weight:6,
+        tags:['debug']
+      },
+      {
+        id:'no_secrets',
+        title:'Local dev does not require secrets (or uses dummy fixtures)',
+        desc:'Bots cannot access secret tokens. Provide safe demo keys, fixtures, or a local sandbox mode.',
+        weight:8,
+        tags:['setup','security']
+      },
+      {
+        id:'deterministic',
+        title:'Build is deterministic',
+        desc:'Pin versions, lockfiles, and ensure “fresh clone” installs reliably. Helps humans too.',
+        weight:7,
+        tags:['setup']
+      },
+      {
+        id:'docs_links',
+        title:'Docs have a navigation “entry point”',
+        desc:'A single docs index page that links to key topics prevents bots from wandering.',
+        weight:5,
+        tags:['discoverability','docs']
+      }
+    ];
+
+    // ---------- Rendering checklist ----------
+    function renderChecklist(){
+      const list = $('#checklist');
+      list.innerHTML = '';
+      for(const it of ITEMS){
+        const row = document.createElement('div');
+        row.className = 'item';
+        const checked = !!STATE.checklist[it.id];
+        row.innerHTML = `
+          <input type="checkbox" id="chk-${it.id}" ${checked ? 'checked' : ''} />
+          <div class="meta">
+            <div class="t">${escapeHtml(it.title)}</div>
+            <div class="d">${escapeHtml(it.desc)}</div>
+          </div>
+          <div class="badge" id="badge-${it.id}">+${it.weight}</div>
+        `;
+        list.appendChild(row);
+
+        const chk = row.querySelector(`#chk-${it.id}`);
+        chk.addEventListener('change', () => {
+          STATE.checklist[it.id] = chk.checked;
+          persist();
+          computeAll();
+        });
+      }
+    }
+
+    function escapeHtml(s){
+      return (s+'')
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#039;');
+    }
+
+    // ---------- Scoring model ----------
+    // Heuristic: checklist + CI + size + persona + constraints.
+    // Output: 0..100. Also yields breakdown, suggested actions, and outcome probabilities.
+
+    function computeScore(){
+      const max = ITEMS.reduce((a,b)=>a+b.weight,0);
+      let got = 0;
+      const breakdown = [];
+
+      for(const it of ITEMS){
+        const on = !!STATE.checklist[it.id];
+        if(on) got += it.weight;
+        breakdown.push({
+          id: it.id,
+          title: it.title,
+          weight: it.weight,
+          on
+        });
+      }
+
+      // CI reliability influences whether bots trust test results.
+      const ciAdj = lerp(-8, +8, clamp(STATE.ci,0,100)/100);
+      // Repo size (complexity) penalizes readability when large.
+      const sizeAdj = ({1:+8,2:+4,3:0,4:-6,5:-12})[STATE.size] ?? 0;
+
+      // If the repo needs secrets, bots get stuck.
+      const secretsPenalty = STATE.checklist.no_secrets ? 0 : -10;
+
+      // Context budget: too low for large repos hurts.
+      const ctx = STATE.ctxKB;
+      const ctxAdj = (STATE.size >= 4 && ctx < 48) ? -8 : (ctx > 80 ? +2 : 0);
+
+      // Persona: fast bots take more risky paths; precise bots spend more time but succeed slightly more.
+      const personaAdj = STATE.persona === 'fast' ? -2 : +2;
+
+      // Total base from checklist normalized.
+      const base = (got / max) * 82; // keep room for modifiers
+      let score = base + ciAdj + sizeAdj + secretsPenalty + ctxAdj + personaAdj;
+      score = clamp(Math.round(score), 0, 100);
+
+      return {score, breakdown, modifiers:{ciAdj, sizeAdj, secretsPenalty, ctxAdj, personaAdj}};
+    }
+
+    function outcomeModel(score){
+      // Produce a small distribution over outcomes.
+      // Softmax-ish over handcrafted utilities.
+      const flaky = STATE.flaky/100;
+      const patience = STATE.patience;
+      const patienceAdj = patience==='low' ? -8 : patience==='high' ? +6 : 0;
+
+      const x = score + patienceAdj - flaky*10;
+
+      const u = {
+        "Creates a helpful docs PR": x + 8,
+        "Submits a tiny code PR": x,
+        "Opens a good issue (blocked)": 70 - x + (STATE.asks ? -6 : +6),
+        "Gives up (silent)": 55 - x + (STATE.asks ? +3 : +10)
+      };
+
+      const keys = Object.keys(u);
+      const mx = Math.max(...keys.map(k=>u[k]));
+      const exps = keys.map(k => Math.exp((u[k]-mx)/9));
+      const sum = exps.reduce((a,b)=>a+b,0);
+      const probs = {};
+      keys.forEach((k,i)=>probs[k] = exps[i]/sum);
+
+      // expected time-to-first-PR in minutes
+      // Lower score increases rework and “guessing”.
+      const base = lerp(26, 190, (100-score)/100);
+      const sizeMult = ({1:0.75,2:0.88,3:1.0,4:1.22,5:1.55})[STATE.size] ?? 1;
+      const flakyMult = 1 + flaky*0.8;
+      const personaMult = STATE.persona==='fast' ? 0.86 : 1.08;
+      const docsMult = STATE.startsDocs ? 0.95 : 1.08;
+      const t = base * sizeMult * flakyMult * personaMult * docsMult;
+
+      return {probs, timeMins: t};
+    }
+
+    function computeNextActions(scoreObj){
+      const missing = ITEMS.filter(it => !STATE.checklist[it.id]);
+      missing.sort((a,b)=>b.weight-a.weight);
+
+      const recs = [];
+      if(!STATE.checklist.readme_clear){
+        recs.push({
+          title: 'Add a copy/paste Quickstart block to README',
+          why: 'Bots decide whether to proceed in the first minute. Make setup unambiguous.',
+          impact: 'High'
+        });
+      }
+      if(!STATE.checklist.tests_command){
+        recs.push({
+          title: 'Document one “official” test command',
+          why: 'A bot can only verify changes if there is a deterministic path to a green run.',
+          impact: 'High'
+        });
+      }
+      if(!STATE.checklist.codebase_map){
+        recs.push({
+          title: 'Create CODEBASE_MAP.md (10-20 lines is enough)',
+          why: 'Prevents context-window waste on directory spelunking.',
+          impact: 'High'
+        });
+      }
+      if(STATE.ci < 70){
+        recs.push({
+          title: 'Reduce CI flakiness (pin versions, fix nondeterminism)',
+          why: 'Bots overreact to flaky tests and maintainers lose trust.',
+          impact: 'Medium'
+        });
+      }
+      if(!STATE.checklist.no_secrets){
+        recs.push({
+          title: 'Provide a local “sandbox mode” that needs no secrets',
+          why: 'Bots cannot fetch hidden tokens. Provide fixtures or mock services.',
+          impact: 'High'
+        });
+      }
+
+      for(const it of missing.slice(0,4)){
+        if(recs.some(r => r.title.includes('CODEBASE_MAP') && it.id==='codebase_map')) continue;
+        if(recs.some(r => r.title.includes('README') && it.id==='readme_clear')) continue;
+        if(recs.some(r => r.title.includes('test command') && it.id==='tests_command')) continue;
+        recs.push({
+          title: it.title,
+          why: it.desc,
+          impact: it.weight>=8 ? 'High' : it.weight>=6 ? 'Medium' : 'Low'
+        });
+      }
+
+      return recs.slice(0,7);
+    }
+
+    function computeAll(){
+      $('#repoName').value = STATE.repoName;
+      $('#lang').value = STATE.lang;
+      $('#contrib').value = STATE.contrib;
+      $('#rangeSize').value = STATE.size;
+      $('#rangeCI').value = STATE.ci;
+      $('#goal').value = STATE.goal;
+      $('#patience').value = STATE.patience;
+      $('#rangeCtx').value = STATE.ctxKB;
+      $('#rangeFlaky').value = STATE.flaky;
+      $('#botName').value = STATE.botName;
+      $('#togAsks').checked = STATE.asks;
+      $('#togTests').checked = STATE.runsTests;
+      $('#togDocs').checked = STATE.startsDocs;
+
+      updateRangeLabels();
+
+      const s = computeScore();
+      const out = outcomeModel(s.score);
+
+      // UI score
+      $('#scoreBig').textContent = s.score;
+      $('#scoreText').textContent = `${s.score} / 100`;
+
+      const sorted = Object.entries(out.probs).sort((a,b)=>b[1]-a[1]);
+      const top = sorted.slice(0,2).map(([k,v]) => `${k} (${Math.round(v*100)}%)`).join(' · ');
+      $('#outcomesText').textContent = top;
+      $('#ttfpText').textContent = fmtTime(out.timeMins);
+
+      renderBreakdown(s);
+      renderNextActions(computeNextActions(s));
+      renderChips(s.score, out);
+      renderLandingPreview();
+
+      // update badges to reflect on/off
+      for(const it of ITEMS){
+        const b = $(`#badge-${it.id}`);
+        if(!b) continue;
+        if(STATE.checklist[it.id]){
+          b.className = 'badge good';
+          b.textContent = `+${it.weight}`;
+        }else{
+          const sev = it.weight>=8 ? 'bad' : it.weight>=6 ? 'warn' : 'warn';
+          b.className = `badge ${sev}`;
+          b.textContent = `+${it.weight}`;
+        }
+      }
+
+      return {score:s, outcome:out};
+    }
+
+    function updateRangeLabels(){
+      const labels = {1:'tiny',2:'small',3:'medium',4:'large',5:'huge'};
+      $('#sizeLabel').textContent = labels[STATE.size] || 'medium';
+      $('#ciLabel').textContent = `${STATE.ci}%`;
+      $('#ctxLabel').textContent = `${STATE.ctxKB} KB`;
+      $('#flakyLabel').textContent = `${STATE.flaky}%`;
+    }
+
+    function renderBreakdown(s){
+      const el = $('#breakdown');
+      const on = s.breakdown.filter(x=>x.on).reduce((a,b)=>a+b.weight,0);
+      const total = s.breakdown.reduce((a,b)=>a+b.weight,0);
+      const pct = Math.round((on/total)*100);
+
+      const mods = s.modifiers;
+      const modRows = [
+        {k:'CI reliability', v: mods.ciAdj},
+        {k:'Repo size', v: mods.sizeAdj},
+        {k:'Secrets / fixtures', v: mods.secretsPenalty},
+        {k:'Context budget', v: mods.ctxAdj},
+        {k:'Persona', v: mods.personaAdj},
+      ];
+
+      const modHtml = modRows.map(r => {
+        const cls = r.v>=0 ? 'good' : (r.v<=-8 ? 'bad' : 'warn');
+        const sign = r.v>=0 ? '+' : '';
+        return `<div style="display:flex; justify-content:space-between; gap:10px; padding:8px 10px; border-radius:12px; border:1px solid rgba(255,255,255,.10); background:rgba(0,0,0,.20); margin-top:8px">
+          <div style="color:rgba(255,255,255,.80); font-size:12.5px">${escapeHtml(r.k)}</div>
+          <div class="badge ${cls}" style="font-family:var(--mono)">${sign}${round(r.v,1)}</div>
+        </div>`;
+      }).join('');
+
+      el.innerHTML = `
+        <div class="smallNote">Checklist coverage: <b style="color:rgba(255,255,255,.92)">${pct}%</b> (${on} / ${total} points)</div>
+        ${modHtml}
+      `;
+    }
+
+    function renderNextActions(recs){
+      const el = $('#nextActions');
+      el.innerHTML = '';
+      for(const r of recs){
+        const row = document.createElement('div');
+        row.className = 'evt';
+        const dotCls = r.impact==='High' ? 'good' : r.impact==='Medium' ? 'warn' : 'warn';
+        row.innerHTML = `
+          <div class="dot ${dotCls}"></div>
+          <div class="text">
+            <div class="t">${escapeHtml(r.title)}</div>
+            <div class="d">${escapeHtml(r.why)}</div>
+          </div>
+          <div class="time">${escapeHtml(r.impact)}</div>
+        `;
+        el.appendChild(row);
+      }
+    }
+
+    function renderChips(score, out){
+      const el = $('#chips');
+      const chips = [];
+      chips.push({t:`Score ${score}`, cls: score>=80?'good':score>=60?'warn':'bad'});
+      chips.push({t:`CI ${STATE.ci}%`, cls: STATE.ci>=80?'good':STATE.ci>=60?'warn':'bad'});
+      chips.push({t:`Size ${STATE.size}`, cls: STATE.size<=2?'good':STATE.size===3?'warn':'bad'});
+      chips.push({t:`Flaky ${STATE.flaky}%`, cls: STATE.flaky<=15?'good':STATE.flaky<=35?'warn':'bad'});
+      const top = Object.entries(out.probs).sort((a,b)=>b[1]-a[1])[0];
+      chips.push({t:`Top: ${top[0].split('(')[0].trim()}`, cls:'warn'});
+
+      el.innerHTML = chips.map(c => `<span class="badge ${c.cls}">${escapeHtml(c.t)}</span>`).join('');
+    }
+
+    // ---------- Simulation engine ----------
+    const SIM = {
+      running:false,
+      stepIndex:0,
+      steps:[],
+      startedAt:0,
+      accumMins:0,
+      outcome:null
+    };
+
+    function buildSteps(){
+      const goal = STATE.goal;
+      const steps = [];
+
+      const needs = {
+        hasReadme: STATE.checklist.readme_clear,
+        hasQuick: STATE.checklist.quickstart,
+        hasTests: STATE.checklist.tests_command,
+        hasMap: STATE.checklist.codebase_map,
+        hasContrib: STATE.checklist.contributing,
+        hasSecretsOk: STATE.checklist.no_secrets,
+        hasDeterminism: STATE.checklist.deterministic,
+      };
+
+      // A small state machine: discover -> setup -> understand -> change -> verify -> submit.
+      steps.push({key:'discover', title:'Find project entry point', desc:'Skims README, looks for quickstart and contribution rules.',
+        baseMins: needs.hasReadme ? 4 : 12,
+        req: 'readme_clear'
+      });
+
+      steps.push({key:'setup', title:'Set up environment', desc:'Attempts install/build using quickstart scripts or guesses commands.',
+        baseMins: needs.hasQuick ? 8 : 22,
+        blockers: [!needs.hasSecretsOk ? 'no_secrets' : null, !needs.hasDeterminism ? 'deterministic' : null].filter(Boolean)
+      });
+
+      steps.push({key:'orient', title:'Build mental model', desc:'Looks for codebase map, directory purpose, and key modules.',
+        baseMins: needs.hasMap ? 7 : 18,
+        req: 'codebase_map'
+      });
+
+      steps.push({key:'task', title:`Implement: ${goal}`, desc:'Makes a small change and tries to stay within stated boundaries.',
+        baseMins: 14,
+        req: needs.hasContrib ? null : 'contributing'
+      });
+
+      steps.push({key:'verify', title:'Verify change', desc:'Runs tests / lint; tries to interpret failures.',
+        baseMins: needs.hasTests ? 10 : 20,
+        req: 'tests_command'
+      });
+
+      steps.push({key:'submit', title:'Prepare PR', desc:'Writes summary, links evidence, fills PR template if present.',
+        baseMins: STATE.checklist.pr_template ? 7 : 10,
+        req: null
+      });
+
+      return steps;
+    }
+
+    function simReset(){
+      SIM.running = false;
+      SIM.stepIndex = 0;
+      SIM.steps = buildSteps();
+      SIM.startedAt = 0;
+      SIM.accumMins = 0;
+      SIM.outcome = null;
+      $('#timeline').innerHTML = '';
+      $('#bar').style.width = '0%';
+      $('#simSummary').textContent = 'Run a simulation to see an outcome summary.';
+    }
+
+    function simPush(type, title, desc, mins){
+      const el = $('#timeline');
+      const row = document.createElement('div');
+      row.className = 'evt';
+      row.innerHTML = `
+        <div class="dot ${type}"></div>
+        <div class="text">
+          <div class="t">${escapeHtml(title)}</div>
+          <div class="d">${escapeHtml(desc)}</div>
+        </div>
+        <div class="time">${escapeHtml(fmtTime(mins))}</div>
+      `;
+      el.appendChild(row);
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function rand(){
+      // mulberry32
+      let t = (SIM._seed += 0x6D2B79F5);
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+
+    function simSetSeed(){
+      // Seed based on state so results are reproducible-ish.
+      const s = JSON.stringify({
+        r: STATE.repoName,
+        c: STATE.checklist,
+        ci: STATE.ci,
+        size: STATE.size,
+        goal: STATE.goal,
+        p: STATE.patience,
+        f: STATE.flaky,
+        ctx: STATE.ctxKB,
+        persona: STATE.persona,
+        asks: STATE.asks
+      });
+      let h = 2166136261;
+      for(let i=0;i<s.length;i++){
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      SIM._seed = h >>> 0;
+    }
+
+    function patienceFactor(){
+      return STATE.patience==='low' ? 0.82 : STATE.patience==='high' ? 1.18 : 1.0;
+    }
+
+    function ctxFactor(){
+      // <16KB is punishing; >80KB helps slightly.
+      if(STATE.ctxKB < 16) return 0.82;
+      if(STATE.ctxKB < 32) return 0.92;
+      if(STATE.ctxKB < 64) return 1.0;
+      if(STATE.ctxKB < 96) return 1.05;
+      return 1.08;
+    }
+
+    function flakeEvent(){
+      // Probability of a transient tool failure.
+      const p = STATE.flaky/100;
+      return rand() < p;
+    }
+
+    function missingInfo(step){
+      // If step requires something missing, may cause block.
+      if(!step.req) return null;
+      if(STATE.checklist[step.req]) return null;
+      return step.req;
+    }
+
+    function simStep(){
+      if(SIM.stepIndex >= SIM.steps.length){
+        return simFinish();
+      }
+
+      const step = SIM.steps[SIM.stepIndex];
+      const scoreObj = computeScore();
+      const score = scoreObj.score;
+
+      // Effective minutes for this step.
+      let mins = step.baseMins;
+
+      // Larger repo and low context make exploration slower.
+      const sizeMult = ({1:0.78,2:0.90,3:1.0,4:1.26,5:1.55})[STATE.size] ?? 1;
+      mins *= sizeMult;
+
+      // Persona changes speed.
+      mins *= (STATE.persona==='fast' ? 0.86 : 1.12);
+
+      // If bot doesn't start with docs, discovery is slower.
+      if(step.key==='discover' && !STATE.startsDocs) mins *= 1.22;
+
+      // Missing info increases time.
+      const missing = missingInfo(step);
+      if(missing) mins *= 1.55;
+
+      // Flakiness can add retries.
+      if(flakeEvent()) mins *= 1.35;
+
+      // CI reliability affects verify stage.
+      if(step.key==='verify'){
+        const ci = STATE.ci/100;
+        mins *= lerp(1.35, 0.92, ci);
+        if(!STATE.runsTests) mins *= 0.65;
+      }
+
+      // Some blockers force a stop unless bot asks questions.
+      const blockers = (step.blockers || []).filter(id => !STATE.checklist[id]);
+      let blocked = blockers.length ? blockers[0] : null;
+
+      // If score is low, bot is more likely to give up on blocked steps.
+      const giveUpChance = clamp(lerp(0.35, 0.06, score/100), 0.06, 0.35) * (STATE.patience==='low' ? 1.25 : 1.0);
+
+      // Determine event type.
+      let type = 'good';
+      let title = step.title;
+      let desc = step.desc;
+
+      if(blocked){
+        type = 'bad';
+        title = `${step.title} — Blocked`;
+        desc = `Missing prerequisite: ${blocked}. ${STATE.asks ? 'Bot will ask a question.' : 'Bot may abandon.'}`;
+
+        if(!STATE.asks && rand() < giveUpChance){
+          SIM.accumMins += mins;
+          simPush(type, title, desc, mins);
+          SIM.outcome = {kind:'Gives up (silent)', reason:`Blocked by ${blocked}`};
+          SIM.stepIndex = SIM.steps.length;
+          updateSimProgress();
+          return simFinish();
+        }
+
+        // If it asks, it spends time and continues with reduced confidence.
+        if(STATE.asks){
+          mins *= 1.12;
+          simPush('warn', `${STATE.botName} opens a question`, `Asks maintainers how to proceed: blocked by ${blocked}.`, 6);
+        }
+      }else if(missing){
+        type = 'warn';
+        title = `${step.title} — Ambiguous`;
+        desc = `Required detail not explicit (${missing}). Bot will infer and proceed cautiously.`;
+        if(STATE.persona==='fast') desc += ' As a fast bot, it guesses more aggressively.';
+      }else if(flakeEvent()){
+        type = 'warn';
+        title = `${step.title} — Tool hiccup`;
+        desc = 'A transient tool/network failure forces retries.';
+      }
+
+      // Accumulate and progress.
+      mins *= patienceFactor() * (1/ctxFactor());
+      mins = clamp(mins, 2.5, 120);
+
+      SIM.accumMins += mins;
+      simPush(type, title, desc, mins);
+
+      // Move forward.
+      SIM.stepIndex += 1;
+      updateSimProgress();
+
+      if(SIM.stepIndex >= SIM.steps.length){
+        return simFinish();
+      }
+
+      return {done:false};
+    }
+
+    function updateSimProgress(){
+      const pct = Math.round((SIM.stepIndex / SIM.steps.length) * 100);
+      $('#bar').style.width = `${pct}%`;
+    }
+
+    function simFinish(){
+      const scoreObj = computeScore();
+      const out = outcomeModel(scoreObj.score);
+      const sorted = Object.entries(out.probs).sort((a,b)=>b[1]-a[1]);
+      const top = sorted[0][0];
+
+      if(!SIM.outcome){
+        SIM.outcome = {kind: top, reason:'Completed run'};
+      }
+
+      const summary = `Outcome: ${SIM.outcome.kind}. Total simulated time: ${fmtTime(SIM.accumMins)}.\n\n` +
+        `Interpretation: readiness score ${scoreObj.score}/100; CI ${STATE.ci}%; flakiness ${STATE.flaky}%; context ${STATE.ctxKB}KB.`;
+
+      $('#simSummary').textContent = summary;
+      toast('Simulation finished.');
+      SIM.running = false;
+      return {done:true};
+    }
+
+    async function simRun(auto=false){
+      simReset();
+      simSetSeed();
+      SIM.running = true;
+      toast('Simulation started.');
+
+      if(auto){
+        while(SIM.running && SIM.stepIndex < SIM.steps.length){
+          simStep();
+          await sleep(260);
+        }
+      }else{
+        simStep();
+      }
+    }
+
+    async function simFast(){
+      if(!SIM.running){
+        await simRun(true);
+        return;
+      }
+      while(SIM.running && SIM.stepIndex < SIM.steps.length){
+        simStep();
+        await sleep(60);
+      }
+    }
+
+    // ---------- Generators ----------
+    const GEN = {
+      readme: () => {
+        const name = STATE.repoName;
+        return `## For AI coding agents\n\n`+
+`If you are an AI coding agent (or a human using one), start here.\n\n`+
+`### Quickstart\n\n`+
+`1) Install dependencies\n\n\`\`\`bash\n# TODO: add exact command\n\`\`\`\n\n`+
+`2) Run tests\n\n\`\`\`bash\n# TODO: add exact command\n\`\`\`\n\n`+
+`### Repository map\n\n`+
+`- \`/src\`: main library code\n- \`/tests\`: test suite\n- \`/docs\`: documentation\n\n`+
+`### Contribution boundaries\n\n`+
+`- Keep PRs small and focused.\n- Avoid formatting-only changes unless requested.\n- Include how you verified your changes (command + output).\n\n`+
+`### Good first tasks\n\n`+
+`Look for issues labeled **good first issue**. A good issue should include reproduction steps, expected output, and file pointers.\n`;
+      },
+
+      contrib: () => {
+        const lang = STATE.lang;
+        return `# Contributing\n\nThanks for contributing. This guide is written for humans and AI coding agents.\n\n`+
+`## Local setup\n\n`+
+`- Primary language: ${lang}\n- Expected OS: (fill in)\n\n`+
+`\`\`\`bash\n# 1) bootstrap\n# TODO\n\n# 2) run tests\n# TODO\n\`\`\`\n\n`+
+`## Scope rules\n\n`+
+`- Prefer the smallest change that fixes the problem.\n- Do not change dependencies unless the issue explicitly requests it.\n- If a step is missing, open an issue describing what you tried and what failed.\n\n`+
+`## Verification\n\n`+
+`Include evidence in your PR description:\n- command(s) run\n- result\n\n`+
+`## Asking questions\n\n`+
+`If you are blocked, open an issue titled: \"Question: (topic)\" and include logs, versions, and what you tried.\n`;
+      },
+
+      issue: () => {
+        return `# Issue templates (starter)\n\nCreate \`.github/ISSUE_TEMPLATE/bug_report.md\`:\n\n`+
+`---\nname: Bug report\nabout: Report a reproducible bug\n---\n\n`+
+`## Steps to reproduce\n1. ...\n2. ...\n\n## Expected behavior\n...\n\n## Actual behavior\n...\n\n## Environment\n- OS:\n- Version:\n\n## Logs\n\`\`\`\n(paste logs)\n\`\`\`\n\n`+
+`Create \`.github/ISSUE_TEMPLATE/question.md\`:\n\n`+
+`---\nname: Question / blocked\nabout: Ask for missing repo info (help AI agents too)\n---\n\n`+
+`## What I tried\n...\n\n## Where I got stuck\n...\n\n## Suggested doc improvement\nWhat should we add to README/CONTRIBUTING to prevent this?\n`;
+      },
+
+      pr: () => {
+        return `# Pull request\n\n## What changed\n- ...\n\n## Why\n- ...\n\n## How I verified\n\`\`\`bash\n# commands run\n# TODO\n\`\`\`\n\n## Risk\n- low / medium / high\n\n## Notes for maintainers\n- ...\n`;
+      },
+
+      map: () => {
+        const name = STATE.repoName;
+        return `# CODEBASE_MAP — ${name}\n\n`+
+`This file is a quick orientation for new contributors and AI coding agents.\n\n`+
+`## Top-level\n- \`/src\`: main code\n- \`/tests\`: tests\n- \`/docs\`: docs\n- \`/scripts\`: tooling\n\n`+
+`## Key flows\n- (fill in)\n\n`+
+`## Where to start\n- Read: (entry file)\n- Then: (core module)\n\n`+
+`## Common gotchas\n- ...\n`;
+      },
+
+      actions: () => {
+        return `# GitHub Actions hints (bot-first)\n\n`+
+`- Keep CI steps deterministic (pin versions, lockfiles).\n`+
+`- Ensure local scripts mirror CI commands.\n`+
+`- Print actionable error output (failing test name, diff, stack trace).\n`+
+`- Consider caching dependencies to reduce setup time.\n`;
+      }
+    };
+
+    function renderLandingPreview(){
+      const name = STATE.repoName;
+      const hasQuick = !!STATE.checklist.quickstart;
+      const hasTests = !!STATE.checklist.tests_command;
+      const hasMap = !!STATE.checklist.codebase_map;
+      const hasContrib = !!STATE.checklist.contributing;
+
+      const txt = `BOT LANDING — ${name}\n`+
+        `------------------------------\n`+
+        `1) Quickstart: ${hasQuick ? 'OK' : 'MISSING'}\n`+
+        `2) Tests: ${hasTests ? 'OK' : 'MISSING'}\n`+
+        `3) Map: ${hasMap ? 'OK' : 'MISSING'}\n`+
+        `4) Contrib rules: ${hasContrib ? 'OK' : 'MISSING'}\n\n`+
+        `First PR suggestion: ${STATE.contrib}\n`+
+        `Bot persona: ${STATE.botName} (${STATE.persona})\n`+
+        `Context budget: ${STATE.ctxKB}KB\n`+
+        `CI reliability: ${STATE.ci}%\n`;
+
+      $('#landingPreview').textContent = txt;
+    }
+
+    // ---------- Export pack (ZIP) ----------
+    // Minimal ZIP writer (store method). Good enough for small text files.
+
+    function strToUtf8Bytes(str){
+      return new TextEncoder().encode(str);
+    }
+
+    function u32(n){
+      const b = new Uint8Array(4);
+      b[0] = n & 255;
+      b[1] = (n>>>8) & 255;
+      b[2] = (n>>>16) & 255;
+      b[3] = (n>>>24) & 255;
+      return b;
+    }
+
+    function u16(n){
+      const b = new Uint8Array(2);
+      b[0] = n & 255;
+      b[1] = (n>>>8) & 255;
+      return b;
+    }
+
+    // CRC32 implementation
+    const CRC_TABLE = (() => {
+      const t = new Uint32Array(256);
+      for(let i=0;i<256;i++){
+        let c = i;
+        for(let k=0;k<8;k++) c = (c & 1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1);
+        t[i] = c >>> 0;
+      }
+      return t;
+    })();
+
+    function crc32(bytes){
+      let c = 0xFFFFFFFF;
+      for(const b of bytes){
+        c = CRC_TABLE[(c ^ b) & 0xFF] ^ (c>>>8);
+      }
+      return (c ^ 0xFFFFFFFF) >>> 0;
+    }
+
+    function concatBytes(chunks){
+      const total = chunks.reduce((a,b)=>a+b.length,0);
+      const out = new Uint8Array(total);
+      let o=0;
+      for(const c of chunks){ out.set(c, o); o += c.length; }
+      return out;
+    }
+
+    function makeZip(files){
+      // files: [{name, content}] content string
+      const localParts = [];
+      const centralParts = [];
+      let offset = 0;
+
+      for(const f of files){
+        const nameBytes = strToUtf8Bytes(f.name);
+        const dataBytes = strToUtf8Bytes(f.content);
+        const crc = crc32(dataBytes);
+
+        // Local file header
+        const localHeader = concatBytes([
+          u32(0x04034b50), // signature
+          u16(20), // version
+          u16(0), // flags
+          u16(0), // compression (store)
+          u16(0), // mod time
+          u16(0), // mod date
+          u32(crc),
+          u32(dataBytes.length),
+          u32(dataBytes.length),
+          u16(nameBytes.length),
+          u16(0) // extra len
+        ]);
+
+        localParts.push(localHeader, nameBytes, dataBytes);
+
+        // Central directory header
+        const centralHeader = concatBytes([
+          u32(0x02014b50),
+          u16(20), // version made
+          u16(20), // version needed
+          u16(0), // flags
+          u16(0), // store
+          u16(0), // time
+          u16(0), // date
+          u32(crc),
+          u32(dataBytes.length),
+          u32(dataBytes.length),
+          u16(nameBytes.length),
+          u16(0), // extra
+          u16(0), // comment
+          u16(0), // disk
+          u16(0), // int attr
+          u32(0), // ext attr
+          u32(offset)
+        ]);
+
+        centralParts.push(centralHeader, nameBytes);
+        offset += localHeader.length + nameBytes.length + dataBytes.length;
+      }
+
+      const centralStart = offset;
+      const centralBlob = concatBytes(centralParts);
+      offset += centralBlob.length;
+
+      // End of central directory
+      const eocd = concatBytes([
+        u32(0x06054b50),
+        u16(0), u16(0),
+        u16(files.length),
+        u16(files.length),
+        u32(centralBlob.length),
+        u32(centralStart),
+        u16(0)
+      ]);
+
+      return concatBytes([...localParts, centralBlob, eocd]);
+    }
+
+    function downloadBytes(bytes, filename){
+      const blob = new Blob([bytes], {type:'application/zip'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1200);
+    }
+
+    function renderPackList(){
+      const el = $('#packList');
+      el.innerHTML = '';
+      const files = Object.keys(STATE.pack);
+      if(!files.length){
+        el.innerHTML = `<div class="smallNote">Pack is empty. Insert generated content with “Insert into export pack”.</div>`;
+        return;
+      }
+      for(const name of files.sort()){
+        const row = document.createElement('div');
+        row.className = 'evt';
+        row.innerHTML = `
+          <div class="dot good"></div>
+          <div class="text">
+            <div class="t">${escapeHtml(name)}</div>
+            <div class="d">${escapeHtml(STATE.pack[name].slice(0,120))}${STATE.pack[name].length>120?'…':''}</div>
+          </div>
+          <div class="time"><button class="btn" data-del="${escapeHtml(name)}" style="padding:6px 8px; border-radius:10px">Remove</button></div>
+        `;
+        el.appendChild(row);
+      }
+
+      $$('button[data-del]', el).forEach(btn => {
+        btn.addEventListener('click', () => {
+          const name = btn.getAttribute('data-del');
+          delete STATE.pack[name];
+          persist();
+          renderPackList();
+          toast('Removed from pack.');
+        });
+      });
+    }
+
+    function exportZip(){
+      const files = Object.keys(STATE.pack).map(name => ({name, content: STATE.pack[name]}));
+      if(!files.length){ toast('Pack is empty.'); return; }
+
+      // Always include a small manifest.
+      const s = computeScore();
+      const out = outcomeModel(s.score);
+      const manifest = {
+        generatedAt: new Date().toISOString(),
+        repoName: STATE.repoName,
+        readinessScore: s.score,
+        assumptions: {
+          size: STATE.size,
+          ci: STATE.ci,
+          flakiness: STATE.flaky,
+          contextKB: STATE.ctxKB,
+          persona: STATE.persona
+        },
+        topOutcomes: Object.entries(out.probs).sort((a,b)=>b[1]-a[1]).slice(0,2),
+        note: 'Generated locally in Bot-Friendly OSS. No repo scanning performed.'
+      };
+      files.unshift({name:'BOT_READINESS_MANIFEST.json', content: JSON.stringify(manifest, null, 2)});
+
+      const bytes = makeZip(files);
+      downloadBytes(bytes, `${STATE.repoName}-bot-starter-pack.zip`);
+      toast('Downloaded ZIP.');
+    }
+
+    // ---------- Text analysis ----------
+    function analyzeText(text){
+      // Quick heuristics: detect commands, fenced code blocks, presence of "how to run" keywords, etc.
+      const lines = text.split(/\r?\n/);
+      const hasFence = /```/.test(text);
+      const cmdLines = lines.filter(l => /^\s*(npm|pnpm|yarn|pip|python|go|cargo|make|docker|bun)\b/.test(l)).length;
+      const todo = lines.filter(l => /TODO|FIXME/.test(l)).length;
+      const len = text.length;
+
+      let score = 0;
+      if(hasFence) score += 18;
+      if(cmdLines>=2) score += 22;
+      if(/quickstart|install|setup/i.test(text)) score += 16;
+      if(/tests?|verify/i.test(text)) score += 16;
+      if(/scope|boundar|do not/i.test(text)) score += 10;
+      score -= Math.min(todo*3, 18);
+      score = clamp(score, 0, 100);
+
+      const notes = [];
+      if(!hasFence) notes.push('Add fenced code blocks for copy/paste commands.');
+      if(cmdLines<2) notes.push('Include explicit install + test commands.');
+      if(todo>0) notes.push('Replace TODO placeholders with real commands.');
+
+      return {score, cmdLines, todo, len, notes};
+    }
+
+    // ---------- Persistence ----------
+    const STORAGE_KEY = 'bot-friendly-oss.v1';
+    let STATE = loadState();
+
+    function loadState(){
+      // Start with defaults, override from URL, override from localStorage.
+      let st = structuredClone(DEFAULT);
+      const fromLs = safeJsonParse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if(fromLs) st = deepMerge(st, fromLs);
+
+      const url = new URL(location.href);
+      const blob = url.searchParams.get('s');
+      if(blob){
+        const decoded = decodeURIComponent(blob);
+        const obj = safeJsonParse(atob(decoded) || 'null');
+        if(obj) st = deepMerge(st, obj);
+      }
+
+      // ensure checklist keys exist
+      st.checklist = st.checklist || {};
+      for(const it of ITEMS){
+        if(typeof st.checklist[it.id] !== 'boolean') st.checklist[it.id] = false;
+      }
+      st.pack = st.pack || {};
+      return st;
+    }
+
+    function persist(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
+    }
+
+    function deepMerge(a,b){
+      if(typeof a !== 'object' || a===null) return b;
+      if(typeof b !== 'object' || b===null) return a;
+      const out = Array.isArray(a) ? [...a] : {...a};
+      for(const k of Object.keys(b)){
+        if(k in out) out[k] = deepMerge(out[k], b[k]);
+        else out[k] = b[k];
+      }
+      return out;
+    }
+
+    // ---------- Wire up UI ----------
+    function setActiveTab(name){
+      $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab===name));
+      $$('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.tab===name ? 'true' : 'false'));
+
+      $$('.panel').forEach(p => p.classList.remove('active'));
+      $(`#panel-${name}`).classList.add('active');
+    }
+
+    function wireTabs(){
+      $$('.tab').forEach(t => {
+        t.addEventListener('click', () => setActiveTab(t.dataset.tab));
+        t.addEventListener('keydown', (e) => {
+          if(e.key==='Enter' || e.key===' '){ e.preventDefault(); setActiveTab(t.dataset.tab); }
+        });
+      });
+    }
+
+    function wireInputs(){
+      $('#repoName').addEventListener('input', (e) => { STATE.repoName = e.target.value.trim() || 'repo'; persist(); computeAll(); });
+      $('#lang').addEventListener('change', (e) => { STATE.lang = e.target.value; persist(); computeAll(); });
+      $('#contrib').addEventListener('change', (e) => { STATE.contrib = e.target.value; persist(); computeAll(); });
+
+      $('#rangeSize').addEventListener('input', (e) => { STATE.size = parseInt(e.target.value,10); persist(); computeAll(); });
+      $('#rangeCI').addEventListener('input', (e) => { STATE.ci = parseInt(e.target.value,10); persist(); computeAll(); });
+      $('#goal').addEventListener('change', (e) => { STATE.goal = e.target.value; persist(); simReset(); computeAll(); });
+      $('#patience').addEventListener('change', (e) => { STATE.patience = e.target.value; persist(); simReset(); computeAll(); });
+      $('#rangeCtx').addEventListener('input', (e) => { STATE.ctxKB = parseInt(e.target.value,10); persist(); computeAll(); });
+      $('#rangeFlaky').addEventListener('input', (e) => { STATE.flaky = parseInt(e.target.value,10); persist(); computeAll(); });
+
+      $('#botName').addEventListener('input', (e) => { STATE.botName = e.target.value.trim() || 'PatchBot'; persist(); computeAll(); });
+      $('#togAsks').addEventListener('change', (e) => { STATE.asks = !!e.target.checked; persist(); computeAll(); });
+      $('#togTests').addEventListener('change', (e) => { STATE.runsTests = !!e.target.checked; persist(); computeAll(); });
+      $('#togDocs').addEventListener('change', (e) => { STATE.startsDocs = !!e.target.checked; persist(); computeAll(); });
+
+      $('#stylePrecise').addEventListener('click', () => { STATE.persona='precise'; persist(); computeAll(); toast('Persona: precise'); });
+      $('#styleFast').addEventListener('click', () => { STATE.persona='fast'; persist(); computeAll(); toast('Persona: fast'); });
+    }
+
+    function wireButtons(){
+      $('#btnReset').addEventListener('click', () => {
+        if(!confirm('Reset checklist and settings?')) return;
+        const keepRepo = STATE.repoName;
+        STATE = structuredClone(DEFAULT);
+        STATE.repoName = keepRepo;
+        // keep checklist false
+        for(const it of ITEMS) STATE.checklist[it.id] = false;
+        STATE.pack = {};
+        persist();
+        renderChecklist();
+        simReset();
+        computeAll();
+        renderPackList();
+        toast('Reset.');
+      });
+
+      $('#btnAutoFix').addEventListener('click', () => {
+        // Turn on a minimal “bot-friendly baseline”.
+        const baseline = ['readme_clear','tests_command','contributing','issue_templates','pr_template','deterministic'];
+        for(const id of baseline) STATE.checklist[id] = true;
+        persist();
+        renderChecklist();
+        simReset();
+        computeAll();
+        toast('Applied baseline suggestions.');
+      });
+
+      $('#btnLoadDemo').addEventListener('click', () => {
+        STATE.repoName = 'oss-bot-ready';
+        STATE.lang = 'JavaScript/TypeScript';
+        STATE.contrib = 'Docs improvements';
+        STATE.size = 3;
+        STATE.ci = 86;
+        STATE.goal = 'Improve README clarity';
+        STATE.patience = 'med';
+        STATE.ctxKB = 64;
+        STATE.flaky = 12;
+        STATE.botName = 'PatchBot';
+        STATE.persona = 'precise';
+        STATE.asks = true;
+        STATE.runsTests = true;
+        STATE.startsDocs = true;
+
+        // a plausible demo checklist
+        const on = ['readme_clear','quickstart','tests_command','good_first_issues','contributing','codebase_map','stable_ci','issue_templates','pr_template','observability','no_secrets','deterministic','docs_links'];
+        for(const it of ITEMS) STATE.checklist[it.id] = on.includes(it.id);
+
+        // seed export pack
+        STATE.pack = {
+          'README_AI_AGENTS.md': GEN.readme(),
+          'CONTRIBUTING.md': GEN.contrib(),
+          'CODEBASE_MAP.md': GEN.map(),
+          '.github/PULL_REQUEST_TEMPLATE.md': GEN.pr(),
+        };
+
+        persist();
+        renderChecklist();
+        simReset();
+        computeAll();
+        renderPackList();
+        toast('Loaded demo state.');
+      });
+
+      $('#btnRun').addEventListener('click', () => simRun(true));
+      $('#btnStep').addEventListener('click', () => {
+        if(!SIM.running){ simRun(false); return; }
+        simStep();
+      });
+      $('#btnFast').addEventListener('click', () => simFast());
+
+      // generator presets
+      $$('button[data-gen]').forEach(b => {
+        b.addEventListener('click', () => {
+          const k = b.getAttribute('data-gen');
+          const fn = GEN[k];
+          if(!fn) return;
+          $('#editor').value = fn();
+          toast(`Generated: ${k}`);
+        });
+      });
+
+      $('#btnCopy').addEventListener('click', async () => {
+        const t = $('#editor').value || '';
+        if(!t.trim()){ toast('Nothing to copy.'); return; }
+        await navigator.clipboard.writeText(t);
+        toast('Copied.');
+      });
+
+      $('#btnAnalyze').addEventListener('click', () => {
+        const t = $('#editor').value || '';
+        const a = analyzeText(t);
+        const notes = a.notes.length ? a.notes.map(n=>`- ${n}`).join('<br/>') : 'Looks good.';
+        $('#analyzeOut').innerHTML = `Text readiness: <b>${a.score}/100</b><br/>Commands detected: <b>${a.cmdLines}</b> · TODO markers: <b>${a.todo}</b><br/><div style="margin-top:6px">${notes}</div>`;
+      });
+
+      $('#btnInsert').addEventListener('click', () => {
+        const t = $('#editor').value || '';
+        if(!t.trim()){ toast('Editor is empty.'); return; }
+        const name = prompt('Filename to add to pack (example: CONTRIBUTING.md):', 'CONTRIBUTING.md');
+        if(!name) return;
+        STATE.pack[name] = t;
+        persist();
+        renderPackList();
+        toast('Added to pack.');
+      });
+
+      $('#btnClearPack').addEventListener('click', () => {
+        if(!confirm('Clear export pack?')) return;
+        STATE.pack = {};
+        persist();
+        renderPackList();
+        toast('Cleared pack.');
+      });
+
+      $('#btnExport').addEventListener('click', exportZip);
+      $('#btnExport2').addEventListener('click', exportZip);
+
+      // state sharing
+      $('#btnCopyState').addEventListener('click', async () => {
+        await navigator.clipboard.writeText(JSON.stringify(STATE, null, 2));
+        toast('Copied state JSON.');
+      });
+
+      $('#btnPasteState').addEventListener('click', async () => {
+        const txt = prompt('Paste state JSON:');
+        if(!txt) return;
+        const obj = safeJsonParse(txt);
+        if(!obj){ toast('Invalid JSON.'); return; }
+        STATE = deepMerge(structuredClone(DEFAULT), obj);
+        // ensure checklist
+        STATE.checklist = STATE.checklist || {};
+        for(const it of ITEMS){
+          if(typeof STATE.checklist[it.id] !== 'boolean') STATE.checklist[it.id] = false;
+        }
+        STATE.pack = STATE.pack || {};
+        persist();
+        renderChecklist();
+        simReset();
+        computeAll();
+        renderPackList();
+        toast('Loaded state.');
+      });
+
+      $('#btnShareLink').addEventListener('click', async () => {
+        const blob = btoa(JSON.stringify(STATE));
+        const url = new URL(location.href);
+        url.searchParams.set('s', encodeURIComponent(blob));
+        await navigator.clipboard.writeText(url.toString());
+        $('#shareOut').textContent = 'Copied share link to clipboard.';
+        toast('Copied share link.');
+      });
+
+      // issue generator
+      $$('button[data-issue]').forEach(b => {
+        b.addEventListener('click', () => {
+          const kind = b.getAttribute('data-issue');
+          $('#issueOut').value = generateIssue(kind);
+          toast('Generated issue.');
+        });
+      });
+
+      $('#btnCopyIssue').addEventListener('click', async () => {
+        const t = $('#issueOut').value || '';
+        if(!t.trim()){ toast('Nothing to copy.'); return; }
+        await navigator.clipboard.writeText(t);
+        toast('Copied issue.');
+      });
+
+      $('#btnPutInPack').addEventListener('click', () => {
+        const t = $('#issueOut').value || '';
+        if(!t.trim()){ toast('Issue is empty.'); return; }
+        const name = prompt('Filename to add to pack (example: issue.md):', 'AI_BOT_FRIENDLY_ISSUE.md');
+        if(!name) return;
+        STATE.pack[name] = t;
+        persist();
+        renderPackList();
+        toast('Added issue to pack.');
+      });
+    }
+
+    function generateIssue(kind){
+      const repo = STATE.repoName;
+      const goal = STATE.contrib;
+      const lang = STATE.lang;
+      const bot = STATE.botName;
+
+      const base = `# ${kind.toUpperCase()} — Bot-friendly ticket\n\n`+
+        `Repo: **${repo}**\n\n`+
+        `This issue is intentionally concrete so humans and AI agents can complete it quickly.\n\n`+
+        `## Objective\n`;
+
+      const how = `\n## How to verify\n\`\`\`bash\n# run tests\n# TODO\n\`\`\`\n\n`+
+        `## Boundaries\n- Keep the change small.\n- Avoid dependency bumps unless necessary.\n- Prefer updating docs/tests over changing production behavior.\n\n`+
+        `## Helpful pointers\n- Language: ${lang}\n- Suggested files: (fill in)\n\n`+
+        `## Notes for AI agents\nIf blocked, open a comment describing what information is missing and propose a doc update.\n`;
+
+      if(kind==='bug'){
+        return base +
+          `Fix a reproducible bug with a minimal patch.\n\n`+
+          `## Reproduction\n1. ...\n2. ...\n\n`+
+          `## Expected\n...\n\n`+
+          `## Actual\n...\n` + how;
+      }
+
+      if(kind==='docs'){
+        return base +
+          `Improve documentation clarity for new contributors and AI coding agents.\n\n`+
+          `## Target page/section\n- ...\n\n`+
+          `## Proposed edits\n- Add a copy/paste quickstart\n- Add troubleshooting\n- Add an example\n` + how;
+      }
+
+      if(kind==='test'){
+        return base +
+          `Add or improve a unit test to lock in expected behavior.\n\n`+
+          `## Context\n- Which behavior? ...\n\n`+
+          `## Acceptance criteria\n- Test fails before fix\n- Test passes after\n` + how;
+      }
+
+      // feat
+      return base +
+        `Implement a tiny feature that is safe and measurable.\n\n`+
+        `## Feature description\n- ...\n\n`+
+        `## Acceptance criteria\n- ...\n` + how;
+    }
+
+    // ---------- Init ----------
+    function init(){
+      renderChecklist();
+      wireTabs();
+      wireInputs();
+      wireButtons();
+      simReset();
+      computeAll();
+      renderPackList();
+
+      // Generate initial editor content
+      $('#editor').value = GEN.readme();
+      $('#issueOut').value = generateIssue('docs');
+
+      window.addEventListener('keydown', (e) => {
+        if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='k'){
+          e.preventDefault();
+          $('#repoName').focus();
+          toast('Focus: repo name');
+        }
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
